@@ -247,7 +247,7 @@ var meshVS = `
 	
 	varying vec2 texCoord;
 	varying vec3 vertexNormal;
-	varying mat3 v_to_tan;
+	varying mat3 tan_to_m;
 	
 	mat3 transMat3( mat3 m ){
 		return mat3(
@@ -261,7 +261,7 @@ var meshVS = `
 		vec3 face_normal = normalize(cross(m_tan, m_bitan));
 		vec3 m_tan = normalize(m_tan);
 		vec3 m_bitan = normalize(m_bitan);
-		v_to_tan = transMat3(mat3(-m_tan, m_bitan, face_normal));
+		tan_to_m = mat3(-m_tan, m_bitan, face_normal);
 		
 		texCoord = txc;
 		
@@ -282,7 +282,7 @@ var meshFS = `
 	uniform vec3 camDir;
 	uniform mat4 mv;
 
-	varying mat3 v_to_tan;
+	varying mat3 tan_to_m;
 	varying vec2 texCoord;
 	varying vec3 vertexNormal;
 
@@ -293,9 +293,10 @@ var meshFS = `
 	{
 		vec4 white = vec4(1,1,1,1);
 		vec4 normalByTex = texture2D( normalTex, texCoord );
+		normalByTex = normalByTex * 2.0 - 1.0;
 		vec4 difuss_color = texture2D( tex, texCoord);
 		
-		vec3 t_lightDir = v_to_tan * lightDir;
+		vec3 m_normal = tan_to_m * normalByTex.xyz;
 		// if(show_texture)
 		// 	difuss_color = texture2D( tex, texCoord);
 		// else
@@ -309,7 +310,7 @@ var meshFS = `
 		vec4 sep_component = white * pow(max(cosphi, 0.0), shininess);
 		
 		
-		gl_FragColor = normalByTex;
+		gl_FragColor = vec4(m_normal, 1);
 		//gl_FragColor = difuss_color + difuss_component + sep_component;
 		//gl_FragColor = normalByTex;
 	}
