@@ -535,11 +535,6 @@ function SetShininess( param )
 	DrawScene();
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-	var client = new XMLHttpRequest();
-	console.log("load finished");
-}, false);
-
 ///////////////////////////////////////////////////////////////////////////////////
 </script>
 
@@ -663,8 +658,8 @@ input[type=range] {
 </div>
 <div class="control-group">
 <div class="control">OBJ model:<br/><input id="obj" type="file" onchange="LoadObj(this)" accept=".obj"/></div>
-<div class="control">Texture image:<br/><input id="texture" type="file" onchange="LoadTexture(this, 'texture-img')" accept="image/*"/></div>
-<div class="control">Normal texture:<br/><input id="texture" type="file" onchange="LoadTexture(this, 'normal-img')" accept="image/*"/></div>
+<div class="control" id="diffuse">Texture image:<br/><input id="texture" type="file" onchange="LoadTexture(this, 'texture-img')" accept="image/*"/></div>
+<div class="control" id="normal">Normal texture:<br/><input id="texture" type="file" onchange="LoadTexture(this, 'normal-img')" accept="image/*"/></div>
 </div>
 <div class="control-group">
 <img id="texture-img" />
