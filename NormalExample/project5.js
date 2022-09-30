@@ -90,7 +90,6 @@ class MeshDrawer
 		// Update the contents of the vertex buffer objects.
 		this.numTriangles = vertPos.length / 3;
 		
-		console.log(this.m_tan_pos)
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.vertbuffer);
 		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertPos), gl.STATIC_DRAW);
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.coordbuffer);
