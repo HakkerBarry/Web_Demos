@@ -297,21 +297,22 @@ var meshFS = `
 		vec4 difuss_color = texture2D( tex, texCoord);
 		
 		vec3 m_normal = tan_to_m * normalByTex.xyz;
-		// if(show_texture)
-		// 	difuss_color = texture2D( tex, texCoord);
-		// else
-		// 	difuss_color = white;
+		vec3 v_normal = mat3(mv) * m_normal;
+		if(show_texture)
+			difuss_color = texture2D( tex, texCoord);
+		else
+			difuss_color = white;
 			
-		float costheta = dot(vertexNormal, lightDir)/(length(vertexNormal) * length(lightDir));
+		float costheta = dot(v_normal, lightDir)/(length(v_normal) * length(lightDir));
 		
 		vec4 difuss_component =  max(costheta, 0.0) * difuss_color;
 		vec3 h = (lightDir + camDir) / length(dot(lightDir, camDir));
-		float cosphi = dot(vertexNormal, h)/(length(vertexNormal)*length(h));
+		float cosphi = dot(v_normal, h)/(length(v_normal)*length(h));
 		vec4 sep_component = white * pow(max(cosphi, 0.0), shininess);
 		
 		
-		gl_FragColor = vec4(m_normal, 1);
-		//gl_FragColor = difuss_color + difuss_component + sep_component;
+		//gl_FragColor = vec4(m_normal, 1);
+		gl_FragColor = difuss_component + sep_component;
 		//gl_FragColor = normalByTex;
 	}
 `;
