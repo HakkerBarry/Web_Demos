@@ -48,6 +48,7 @@ class MeshDrawer
 		this.swap = gl.getUniformLocation(this.prog, 'swap');
 		this.showTex = gl.getUniformLocation(this.prog, 'show_texture');
 		this.sampler = gl.getUniformLocation( this.prog, 'tex' );
+		this.normalSampler = gl.getUniformLocation( this.prog, 'normalTex' );
 		this.shininess = gl.getUniformLocation( this.prog, 'shininess' );
 		this.lightDir= gl.getUniformLocation( this.prog, 'lightDir' );
 		
@@ -65,6 +66,7 @@ class MeshDrawer
 		this.bitanBuffer = gl.createBuffer();
 
 		this.texture = gl.createTexture();
+		this.normalTex = gl.createTexture();
 
 		gl.useProgram(this.prog);
 		gl.uniform1i( this.showTex, 1);
@@ -154,6 +156,12 @@ class MeshDrawer
 		gl.vertexAttribPointer( this.m_bitan_pos, 3, gl.FLOAT, false, 0, 0 );
 		gl.enableVertexAttribArray( this.m_bitan_pos );
 		
+		
+		gl.activeTexture(gl.TEXTURE0);
+		gl.bindTexture(gl.TEXTURE_2D, this.texture);
+		gl.activeTexture(gl.TEXTURE1);
+		gl.bindTexture(gl.TEXTURE_2D, this.normalTex);
+		
 
 		gl.drawArrays( gl.TRIANGLES, 0, this.numTriangles );
 	}
@@ -163,9 +171,8 @@ class MeshDrawer
 	setTexture( img )
 	{
 		// Bind the texture
-		gl.activeTexture(gl.TEXTURE0);
 		gl.bindTexture(gl.TEXTURE_2D, this.texture);
-
+		
 		// You can set the texture image data using the following command.
 		gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, img );
 		gl.generateMipmap(gl.TEXTURE_2D);
@@ -183,7 +190,22 @@ class MeshDrawer
 	
 	SetNormal( img )
 	{
+		// Bind the texture
+		gl.bindTexture(gl.TEXTURE_2D, this.normalTex);
 		
+		// You can set the texture image data using the following command.
+		gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, img );
+		gl.generateMipmap(gl.TEXTURE_2D);
+		
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+		
+		// Now that we have a texture, it might be a good idea to set
+		// some uniform parameter(s) of the fragment shader, so that it uses the texture.
+		gl.useProgram(this.prog);
+		gl.uniform1i(this.normalSampler, 1);
+		
+		this.showTexture(true);
 	}
 	
 	// This method is called when the user changes the state of the
@@ -216,7 +238,6 @@ class MeshDrawer
 var meshVS = `
 	uniform mat4 swap;
 	uniform mat4 mvp;
-	uniform mat4 mv;
 	
 	attribute vec3 m_vertPos;
 	attribute vec3 m_tan;
@@ -226,17 +247,29 @@ var meshVS = `
 	
 	varying vec2 texCoord;
 	varying vec3 vertexNormal;
+	varying mat3 v_to_tan;
+	
+	mat3 transMat3( mat3 m ){
+		return mat3(
+		    vec3(m[0].x, m[1].x, m[2].x),
+		    vec3(m[0].y, m[1].y, m[2].y),
+		    vec3(m[0].z, m[1].z, m[2].z));
+	}
+
 	void main()
 	{
 		vec3 face_normal = normalize(cross(m_tan, m_bitan));
 		vec3 m_tan = normalize(m_tan);
 		vec3 m_bitan = normalize(m_bitan);
+		v_to_tan = transMat3(mat3(-m_tan, m_bitan, face_normal));
+		
 		texCoord = txc;
 		
-		
 		gl_Position = mvp* swap * vec4(m_vertPos,1);
-		vertexNormal = normal;
+		vertexNormal = m_normal;
 	}
+	
+	
 `;
 // Fragment shader source code
 var meshFS = `
@@ -245,8 +278,11 @@ var meshFS = `
 	//for texture
 	uniform bool show_texture;
 	uniform sampler2D tex;
+	uniform sampler2D normalTex;
 	uniform vec3 camDir;
+	uniform mat4 mv;
 
+	varying mat3 v_to_tan;
 	varying vec2 texCoord;
 	varying vec3 vertexNormal;
 
@@ -256,16 +292,25 @@ var meshFS = `
 	void main()
 	{
 		vec4 white = vec4(1,1,1,1);
-		vec4 difuss_color;
-		if(show_texture)
-			difuss_color = texture2D( tex, texCoord);
-		else
-			difuss_color = white;
+		vec4 normalByTex = texture2D( normalTex, texCoord );
+		vec4 difuss_color = texture2D( tex, texCoord);
+		
+		vec3 t_lightDir = v_to_tan * lightDir;
+		// if(show_texture)
+		// 	difuss_color = texture2D( tex, texCoord);
+		// else
+		// 	difuss_color = white;
+			
 		float costheta = dot(vertexNormal, lightDir)/(length(vertexNormal) * length(lightDir));
+		
 		vec4 difuss_component =  max(costheta, 0.0) * difuss_color;
 		vec3 h = (lightDir + camDir) / length(dot(lightDir, camDir));
 		float cosphi = dot(vertexNormal, h)/(length(vertexNormal)*length(h));
 		vec4 sep_component = white * pow(max(cosphi, 0.0), shininess);
-		gl_FragColor = difuss_color + difuss_component + sep_component;
+		
+		
+		gl_FragColor = normalByTex;
+		//gl_FragColor = difuss_color + difuss_component + sep_component;
+		//gl_FragColor = normalByTex;
 	}
 `;

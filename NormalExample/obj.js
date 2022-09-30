@@ -192,3 +192,16 @@ function vectorMultiple( v, s )
 {
 	return [(v[0]*s), (v[1]*s), (v[2]*s)];
 }
+
+function vector3Magnitude( v ){
+	return [Math.sqrt(v[0]*v[0]), Math.sqrt(v[1]*v[1]), Math.sqrt(v[2]*v[2])]
+}
+
+function vector3Normalize( v ){
+	var mag = vector3Magnitude(v);
+	return [v[0]/mag[0], v[1]/mag[1], v[2]/mag[2]];
+}
+
+function crossVector3( v1, v2 ){
+	return [v1[1]*v2[2] - v1[2]*v2[1], v1[2]*v2[0] - v1[0]*v2[2], v1[0]*v2[1] - v1[1]*v2[0]];
+}
